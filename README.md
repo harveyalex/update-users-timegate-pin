@@ -15,6 +15,7 @@ To use this project, follow these steps:
 ```
 MONGO_URI=[your MongoDB connection string]
 CSV_FILE=[path to your CSV file]
+DRY_MODE=[true|false]
 ```
 
 ## Usage
