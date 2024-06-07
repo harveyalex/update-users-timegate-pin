@@ -11,6 +11,8 @@ async fn main() -> Result<()> {
     dotenv()?;
 
     let application_id = ObjectId::from_str(std::env::args().nth(1).unwrap().as_str()).unwrap();
+    let database_id = std::env::args().nth(2).unwrap();
+    let database_id = &database_id.as_str();
     println!("Application ID: {:?}", application_id);
     let csv_file = std::env::var("CSV_FILE")?;
 
@@ -19,7 +21,7 @@ async fn main() -> Result<()> {
 
     let mongo_uri = std::env::var("MONGO_URI").unwrap();
     let client = Client::with_uri_str(&mongo_uri).await?;
-    let db = client.database("development");
+    let db = client.database(database_id);
 
     csv_lines.remove(0); // ignore the headers
     for line in csv_lines {
