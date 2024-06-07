@@ -16,6 +16,7 @@ async fn main() -> Result<()> {
     let database_id = &database_id.as_str();
     let is_dry_run = std::env::var("DRY_RUN").unwrap_or("false".to_string());
     println!("Application ID: {:?}", application_id);
+    println!("Is dry run: {:?}", is_dry_run);
     let csv_file = std::env::var("CSV_FILE")?;
 
     let csv_data = std::fs::read_to_string(&csv_file)?;
