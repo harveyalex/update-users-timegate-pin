@@ -7,7 +7,7 @@ This little script is designed to update a application users timegate pin from a
 ## Installation
 
 To use this project, follow these steps:
-
+0. Install Rust and cargo with rustup (https://rustup.rs/).
 1. Clone the repository.
 2. Create a `.env` file in the root directory.
 3. Add the following environment variables to the `.env` file:
