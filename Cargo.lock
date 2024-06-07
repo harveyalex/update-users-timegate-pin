@@ -659,6 +659,7 @@ dependencies = [
  "anyhow",
  "dotenv",
  "mongodb",
+ "serde",
  "tokio",
 ]
 

@@ -19,5 +19,5 @@ CSV_FILE=[path to your CSV file]
 
 ## Usage
 
- Run the command `cargo run [your application ID]` to start the application.
+ Run the command `cargo run "<applicationId>" "<development|production>"` to start the application.
 
