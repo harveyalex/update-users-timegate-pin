@@ -2,8 +2,7 @@
 
 ## Description
 
-This little script is designed to update a application users timegate pin from a CSV file. The CSV file should contain the following columns:
-First Name, Last Name, Some columns, Timegate Pin (as the 8th column)
+This little script is designed to update a application users timegate pin from a CSV file. The CSV file must look like the one in the `example.csv` file. The script will read the CSV file and update the timegate pin for each user in the file.
 
 ## Installation
 
