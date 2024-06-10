@@ -12,7 +12,7 @@ To use this project, follow these steps:
 2. Create a `.env` file in the root directory.
 3. Add the following environment variables to the `.env` file:
 
-```
+```env
 MONGO_URI=[your MongoDB connection string]
 CSV_FILE=[path to your CSV file]
 DRY_MODE=[true|false]

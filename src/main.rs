@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
     let application_id = ObjectId::from_str(std::env::args().nth(1).unwrap().as_str()).unwrap();
     let database_id = std::env::args().nth(2).unwrap();
     let database_id = &database_id.as_str();
-    let is_dry_run = std::env::var("DRY_RUN").unwrap_or("false".to_string());
+    let is_dry_run = std::env::var("DRY_RUN").unwrap_or("true".to_string());
     println!("Application ID: {:?}", application_id);
     println!("Is dry run: {:?}", is_dry_run);
     let csv_file = std::env::var("CSV_FILE")?;
@@ -39,8 +39,8 @@ async fn main() -> Result<()> {
             first_name, last_name, pin
         );
 
-        let filter = doc! { "application": application_id.clone(), "firstName": first_name, "lastName": last_name };
-        let update = doc! { "$set": { "plugins.timegate.options.employeePIN": pin } };
+        let filter = doc! { "application": application_id.clone(), "firstName": first_name, "lastName": last_name, "deleted": false};
+        let update = doc! { "$set": { "plugins.timegate.options.EmployeePIN": pin } };
 
         if is_dry_run == "true" {
             let would_have_updated = db
