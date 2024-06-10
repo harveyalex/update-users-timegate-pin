@@ -11,8 +11,14 @@ use std::str::FromStr;
 async fn main() -> Result<()> {
     dotenv()?;
 
-    let application_id = ObjectId::from_str(std::env::args().nth(1).unwrap().as_str()).unwrap();
-    let database_id = std::env::args().nth(2).unwrap();
+    let application_id = ObjectId::from_str(
+        std::env::args()
+            .nth(1)
+            .unwrap_or("000000000000000000000000".to_string())
+            .as_str(),
+    )
+    .unwrap();
+    let database_id = std::env::args().nth(2).unwrap_or("development".to_string());
     let database_id = &database_id.as_str();
     let is_dry_run = std::env::var("DRY_RUN").unwrap_or("true".to_string());
     println!("Application ID: {:?}", application_id);
@@ -52,7 +58,7 @@ async fn main() -> Result<()> {
                 "Would have updated: \n first_name: {},\n last_name: {},\n pin: {}",
                 would_have_updated.firstName,
                 would_have_updated.lastName,
-                would_have_updated.plugins.timegate.options.employeePIN
+                would_have_updated.plugins.timegate.options.EmployeePIN
             );
             continue;
         }
@@ -87,5 +93,5 @@ struct TimeGate {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Options {
-    employeePIN: String,
+    EmployeePIN: String,
 }
