@@ -1,15 +1,11 @@
 use anyhow::Result;
 use dotenv::dotenv;
-use mongodb::results::UpdateResult;
 use mongodb::{
     bson::{doc, oid::ObjectId, Document},
     Client,
 };
 use serde::{Deserialize, Serialize};
-use std::future;
 use std::str::FromStr;
-use std::thread::JoinHandle;
-use tokio::join;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ApplicationUser {
@@ -114,24 +110,4 @@ async fn main() -> Result<()> {
     let now = now.elapsed();
     println!("Time elapsed: {:?}", now);
     Ok(())
-}
-
-async fn multi_thread_lines(
-    update: Document,
-    filter: Document,
-    db: mongodb::Database,
-    result: &mut Vec<UpdateResult>,
-) -> Result<&mut Vec<UpdateResult>> {
-    let handles = tokio::spawn(async move {
-        let db_result = db
-            .collection::<Document>("applicationusers")
-            .update_one(filter, update, None)
-            .await
-            .expect("Should not error updating user");
-        db_result
-    });
-    let db_result = handles.await?;
-    result.push(db_result);
-
-    Ok(result)
 }
