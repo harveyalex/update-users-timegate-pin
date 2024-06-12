@@ -33,6 +33,7 @@ async fn main() -> Result<()> {
     let db = client.database(database_id);
 
     csv_lines.remove(0); // ignore the headers
+    let mut would_have_been_updated: Vec<ApplicationUser> = vec![];
     for line in csv_lines {
         let mut user = line.split(",");
         let (first_name, last_name, pin) = match (user.next(), user.next(), user.nth(5)) {
@@ -49,17 +50,13 @@ async fn main() -> Result<()> {
         let update = doc! { "$set": { "plugins.timegate.options.EmployeePIN": pin } };
 
         if is_dry_run == "true" {
-            let would_have_updated = db
-                .collection::<ApplicationUser>("applicationusers")
-                .find_one(filter.clone(), None)
-                .await?
-                .unwrap();
-            println!(
-                "Would have updated: \n first_name: {},\n last_name: {},\n pin: {}",
-                would_have_updated.firstName,
-                would_have_updated.lastName,
-                would_have_updated.plugins.timegate.options.EmployeePIN
+            would_have_been_updated.push(
+                db.collection::<ApplicationUser>("applicationusers")
+                    .find_one(filter.clone(), None)
+                    .await?
+                    .unwrap(),
             );
+
             continue;
         }
         let result = db
@@ -70,7 +67,12 @@ async fn main() -> Result<()> {
         println!("Modified: {:?}", result.modified_count);
         println!("Result: {:?}", result.upserted_id);
     }
-
+    for user in would_have_been_updated {
+        println!(
+            "Would have updated: \n first_name: {},\n last_name: {},\n pin: {}",
+            user.firstName, user.lastName, user.plugins.timegate.options.EmployeePIN
+        );
+    }
     Ok(())
 }
 
