@@ -1,5 +1,7 @@
 use anyhow::Result;
 use dotenv::dotenv;
+use futures::stream::FuturesUnordered;
+use futures::stream::StreamExt;
 use mongodb::{
     bson::{doc, oid::ObjectId, Document},
     Client,
@@ -10,7 +12,7 @@ use std::str::FromStr;
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv()?;
-
+    let time = std::time::Instant::now();
     let application_id = ObjectId::from_str(
         std::env::args()
             .nth(1)
@@ -32,8 +34,12 @@ async fn main() -> Result<()> {
     let client = Client::with_uri_str(&mongo_uri).await?;
     let db = client.database(database_id);
 
+    let mut futures = FuturesUnordered::new();
+    let mut outputs = Vec::new();
+
     csv_lines.remove(0); // ignore the headers
     let mut would_have_been_updated: Vec<ApplicationUser> = vec![];
+
     for line in csv_lines {
         let mut user = line.split(",");
         let (first_name, last_name, pin) = match (user.next(), user.next(), user.nth(5)) {
@@ -41,37 +47,41 @@ async fn main() -> Result<()> {
             _ => continue,
         };
 
-        println!(
-            "first_name: {}, last_name: {}, pin: {}",
-            first_name, last_name, pin
-        );
-
-        let filter = doc! { "application": application_id.clone(), "firstName": first_name, "lastName": last_name, "deleted": false};
+        let filter = doc! { "application": application_id.clone(), "firstName": first_name, "lastName": last_name };
         let update = doc! { "$set": { "plugins.timegate.options.EmployeePIN": pin } };
 
         if is_dry_run == "true" {
-            would_have_been_updated.push(
-                db.collection::<ApplicationUser>("applicationusers")
-                    .find_one(filter.clone(), None)
-                    .await?
-                    .unwrap(),
-            );
+            match db
+                .collection::<ApplicationUser>("applicationusers")
+                .find_one(filter.clone(), None)
+                .await?
+            {
+                Some(user) => {
+                    println!("User: {:?}", user);
+                    would_have_been_updated.push(user);
+                }
+                _ => {
+                    println!("User not found");
+                }
+            }
 
             continue;
         }
-        let result = db
-            .collection::<Document>("applicationusers")
-            .update_one(filter, update, None)
-            .await?;
-
-        println!("Modified: {:?}", result.modified_count);
-        println!("Result: {:?}", result.upserted_id);
-    }
-    for user in would_have_been_updated {
-        println!(
-            "Would have updated: \n first_name: {},\n last_name: {},\n pin: {}",
-            user.firstName, user.lastName, user.plugins.timegate.options.EmployeePIN
-        );
+    if is_dry_run == "true" {
+        println!("Would have updated: {:?}", would_have_been_updated.len());
+        for user in would_have_been_updated {
+            println!(
+                "first_name: {},\n last_name: {},\n pin: {}",
+                user.firstName,
+                user.lastName,
+                user.plugins
+                    .timegate
+                    .options
+                    .expect("Should have employee pin?")
+                    .employeePIN
+            );
+        }
+        return Ok(());
     }
     Ok(())
 }
@@ -90,10 +100,10 @@ struct Plugins {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TimeGate {
-    options: Options,
+    options: Option<Options>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Options {
-    EmployeePIN: String,
+    employeePIN: String,
 }
