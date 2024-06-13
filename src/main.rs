@@ -67,6 +67,7 @@ async fn main() -> Result<()> {
 
             continue;
         }
+    }
     if is_dry_run == "true" {
         println!("Would have updated: {:?}", would_have_been_updated.len());
         for user in would_have_been_updated {
