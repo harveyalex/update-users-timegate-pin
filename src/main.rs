@@ -1,18 +1,16 @@
 use anyhow::Result;
 use dotenv::dotenv;
-use futures::stream::FuturesUnordered;
-use futures::stream::StreamExt;
+use mongodb::results::UpdateResult;
 use mongodb::{
-    bson::{doc, oid::ObjectId, Document},
+    bson::{doc, oid::ObjectId},
     Client,
 };
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv()?;
-    let time = std::time::Instant::now();
+
     let application_id = ObjectId::from_str(
         std::env::args()
             .nth(1)
@@ -34,12 +32,9 @@ async fn main() -> Result<()> {
     let client = Client::with_uri_str(&mongo_uri).await?;
     let db = client.database(database_id);
 
-    let mut futures = FuturesUnordered::new();
-    let mut outputs = Vec::new();
-
     csv_lines.remove(0); // ignore the headers
     let mut would_have_been_updated: Vec<ApplicationUser> = vec![];
-
+    let mut updated: Vec<UpdateResult> = vec![];
     for line in csv_lines {
         let mut user = line.split(",");
         let (first_name, last_name, pin) = match (user.next(), user.next(), user.nth(5)) {
@@ -47,7 +42,7 @@ async fn main() -> Result<()> {
             _ => continue,
         };
 
-        let filter = doc! { "application": application_id.clone(), "firstName": first_name, "lastName": last_name };
+        let filter = doc! { "application": application_id.clone(), "firstName": first_name, "lastName": last_name, "deleted": {"$ne": true} };
         let update = doc! { "$set": { "plugins.timegate.options.EmployeePIN": pin } };
 
         if is_dry_run == "true" {
@@ -64,9 +59,14 @@ async fn main() -> Result<()> {
                     println!("User not found");
                 }
             }
-
             continue;
         }
+        let result = db
+            .collection::<ApplicationUser>("applicationusers")
+            .update_one(filter, update, None)
+            .await?;
+        println!("Updated user: {}", first_name);
+        updated.push(result);
     }
     if is_dry_run == "true" {
         println!("Would have updated: {:?}", would_have_been_updated.len());
@@ -83,6 +83,12 @@ async fn main() -> Result<()> {
             );
         }
         return Ok(());
+    }
+    for result in updated {
+        println!(
+            "Matched: {}, Modified: {}",
+            result.matched_count, result.modified_count
+        );
     }
     Ok(())
 }
