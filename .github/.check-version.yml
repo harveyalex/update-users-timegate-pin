@@ -1,0 +1,31 @@
+name: 'Versioning Checker'
+on: push
+
+jobs:
+  check-commit-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Last Commit Message Text Finder
+        id: isVersionCommit
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '\d+\.\d+\.\d+'
+          error: 'Please use the format "major.minor.patch" for versioning commits.'
+          checkAllCommitMessages: false
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - if: ${{success()}}
+        name: Comment based on commit message
+        uses: mshick/add-pr-comment@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          message: |
+            :warning: It looks you've just versioned. Make sure you've chosen the correctly major/minor/patch option according to the following rules:
+
+            - **Major**: Any changes to native files that should be deployed via the app stores.
+            - **Minor**: Feature update to the javascript files only, i.e. can be CodePush'd
+            - **Patch**: Fix to the javascript files only, i.e. can be CodePush'd
+
+            It's important to _never_ CodePush native changes across **Major** versions. This can cause incompatibility between the javascript and native code that will break the application. We use major versions to enforce this pattern, so choose appropriately.
+          allow-repeats: true
